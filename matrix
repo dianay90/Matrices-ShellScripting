@@ -1,0 +1,392 @@
+#!/bin/bash
+
+
+multiply() 
+
+{
+
+file1=$1
+file2=$2
+
+if [ "$#" -ne 2 ]; then
+  echo "Arguments incompatible" >&2
+  exit 1
+
+fi
+
+if [[ "$2" != "" ]]; then
+  if [ ! -r "$1" ];then
+    echo "Error. Cannot read file." >&2
+    exit 1
+  fi
+fi
+
+
+
+sum=0 i=1 j=1 c=1
+rowfile2=$(cut -f 1 $file2  | wc -w)
+rowfile1=$(cut -f 1 $file1  | wc -w)
+colfile2=$(head -n 1 $file2 | wc -w)
+colfile1=$(head -n 1 $file1 |wc -w)
+
+if [[ $colfile1 != $rowfile2 ]];then
+
+echo "Dimension are incompatible." >&2
+exit 1
+
+fi
+
+
+for i in `seq 1 $rowfile1`
+#for i in 3
+do
+
+	for c in `seq 1 $colfile2`
+	#for i in 3
+	do
+
+		for j in `seq 1 $colfile1`
+		#for i in 3
+		do 
+			file1var=$(cat $file1 | head -n $i | cut -f $j | tail -n 1)
+			file2var=$(cat $file2 | head -n $j | cut -f $c | tail -n 1)
+	
+		temp=$(($file1var * $file2var))
+		sum=$(($temp + $sum))
+	
+		done
+	
+		printf "%d" "$sum" >>final
+		sum=0 
+
+   if  [ $c -eq  $colfile2 ]
+	 then
+		printf "\n" >>final 
+	else 
+		printf "\t" >>final
+	fi 
+
+ done
+	    
+done 
+ 
+cat final 
+rm final 
+
+#return EXIT_SUCCESS	
+return 0 
+}
+
+
+add()
+{
+file1=$1
+file2=$2
+
+
+#check dimensions 
+
+
+if [ "$#" -ne 2 ]; then
+  echo "Arguments incompatible" >&2
+  exit 1
+
+fi
+
+if [[ "$2" != "" ]]; then
+  if [ ! -r "$1" ];then
+    echo "Error. Cannot read file." >&2
+    exit 1
+  fi
+fi
+
+rowfile1=$(cut -f 1 $file1 | wc -w)
+rowfile2=$(cut -f 1 $file2 | wc -w)
+colfile2=$(head -n 1 $file2 | wc -w)
+col=$( head -n 1 $file1 |wc -w)
+
+
+if [[  $rowfile1 !=  $rowfile2 ||  $colfile2 !=  $col ]];
+then
+
+echo "Dimensions do not match" >&2
+exit 1
+
+fi 
+
+count=1
+a=1
+
+while
+	read line1 0<&3
+	read line2 0<&4
+
+do 
+
+	while [ $count  -le  $col ] 
+	do
+
+	one=$(cat $file1 | cut -f $count | head -n $a |  tail -n 1) 
+	two=$(cat $file2 | cut -f $count | head -n $a |  tail -n 1)
+
+	sum=$(($one + $two))
+
+	#echo "sum is" $sum "col is" $col "count is" $count "a is" $a 
+ 
+	printf "%d" "$sum" >>final
+ 
+	if [ $count -lt  $col ]
+	then 
+	 
+	 printf "\t" >> final 	
+	fi
+
+	((count++))
+
+	done 
+
+printf "\n" >>final
+count=1 #reset count
+((a++))
+ 
+done 3<$file1 4<$file2
+ 
+#output
+
+cat final
+rm final 
+
+#return EXIT_SUCCESS
+return 0
+
+}
+
+
+
+
+mean()
+
+{
+
+
+if [ "$#" -ne 1 ]; then
+	echo "Arguments incompatible" >&2
+	exit 1
+
+fi
+
+if [[ "$1" != "" ]]; then
+	if [ ! -r "$1" ];then 
+		echo "Error. Cannot read file." >&2 
+		exit 1
+	fi
+fi
+
+file1=$1
+total=0
+count=1
+a=0
+row=$(head -n 1 $file1 |wc -w)
+col=$(cut -f 1 $file1 | wc -w) 
+
+
+while [ $a -lt $row ]
+
+do 
+g=$(cat $file1| cut -f $count )
+ 
+
+  while read x
+
+	do 
+
+	total=$(($total+$x))
+	
+#	echo "count" $count 
+#	echo "total" $total
+#	echo 	"x" 	$x 
+  
+	done<<< "$g"
+
+#	echo "total" $total 
+
+#echo $total>>sums
+#column COUNT GREATER THAN 0
+avg=$((($total + ($col/2)*(($total>0)*2-1)) / $col )) 
+echo $avg>>sums
+
+total=0
+
+((count++))
+((a++))
+
+done
+
+paste -s sums >final
+cat final
+ 
+rm sums
+rm final 
+#return EXIT_SUCCESS
+
+return 0
+
+}
+
+
+
+
+transpose()
+{
+ 
+
+if [ "$#" -ne 1 ]; then
+  echo "Arguments incompatible" >&2
+  exit 1
+
+fi
+
+if [[ "$1" != "" ]]; then
+  if [ ! -r "$1" ];then
+    echo "Error. Cannot read file." >&2
+    exit 1
+  fi
+fi
+  
+
+file1=$1
+count=1 
+
+#get max row length 
+row=$(head -n 1 $file1 | wc -w)
+
+a=0
+ 
+ 
+while [ $a -lt $row ]
+do
+
+#cut
+ 
+#cat transp 
+
+
+cat $file1 | cut -f $count >transp
+#cut -f $count $file1 >transp
+ 
+
+#put add to new
+
+paste -s  transp >>G
+#cat transp | tr '\n' '\t' >>G
+#row=$(cat transp | tr '\n' '\t' >>G)
+#row=${row%?}; #take out tab
+ 
+#cat transp 
+
+#echo -e "" >>G
+
+
+((count++))
+((a++))
+
+done
+
+
+#print 
+
+
+#sed 's/\t$//' G
+cat G
+
+rm G
+
+#return EXIT_SUCCESS
+return 0 
+}
+
+
+
+
+dims(){
+
+if [ "$#" -ne 1 ]; then
+  echo "Arguments incompatible" >&2
+  exit 1
+
+fi
+
+if [[ "$1" != "" ]]; then
+  if [ ! -r "$1" ];then
+    echo "Error. Cannot read file." >&2
+    exit 1
+  fi
+fi
+
+
+file1=$1
+row=0
+
+while read Line
+do
+	row=$(expr $row + 1)
+done< $file1
+col=$(wc -w $file1 | cut -d ' ' -f1)
+col=$(expr $col / $row)
+
+echo "$row $col"
+#return EXIT_SUCCESS
+return 0
+
+}
+
+
+
+
+#stdin
+
+
+#if [ -s stdin ];then
+if  [[ ! -t 0 ]];then
+
+#stdInFile1="${2:-/dev/stdin}"
+cat>tempFile
+#stdInFile2=$3 
+functions=$1
+
+
+if [[ tempFile != "" ]]; then #file not empty
+  if [ ! -r tempFile ];then
+    echo "Error. Cannot read file." >&2
+    exit 1
+  fi
+else
+		echo "File not found " >&2
+		exit 1
+fi
+
+#check for functions names
+
+if   [[ "$functions" == "dims" || "$functions" == "transpose" || "$functions" == "mean" ]];then
+	if  [  $# -gt 1 ];then
+		echo "Too many arguments."  >&2
+		exit 1
+	else #2 arguments
+		
+	#	$functions $stdInFile1
+		$functions tempFile
+	
+	fi
+fi
+
+else
+$1 "${@:2}"
+
+fi
+
+# #@ is all arguments, @:2 is all arguments from second to last
+#$1 "${@:2}"
+
+
+
+
